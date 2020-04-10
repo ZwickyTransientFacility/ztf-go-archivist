@@ -3,6 +3,7 @@ package main
 import (
 	"archive/tar"
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -19,6 +20,7 @@ const (
 
 	messageTimeout = 5 * time.Second
 	maxRuntime     = 7 * time.Hour
+	updateInterval = 10 * time.Second
 )
 
 func printHelp() {
@@ -69,15 +71,27 @@ func main() {
 	// Showtime: read alerts and write them to the .tar file.
 	ctx := context.Background()
 	n := 0
+
+	progress := progressReport{}
+	progressUpdates := make(chan progressReport, 10)
+	go printProgress(progressUpdates)
+	progressTicker := time.NewTicker(updateInterval)
+
 	for {
 		if time.Since(start) > maxRuntime {
 			break
+		}
+		select {
+		case <-progressTicker.C:
+			progressUpdates <- progress
+			progress = progressReport{}
+		default:
 		}
 
 		ctx, _ := context.WithTimeout(ctx, messageTimeout)
 		alert, err := stream.NextAlert(ctx)
 		if err != nil {
-			if err == context.DeadlineExceeded {
+			if errors.Is(err, context.DeadlineExceeded) {
 				log.Printf("no message in last %s", messageTimeout)
 				continue
 			}
@@ -89,7 +103,9 @@ func main() {
 			log.Fatalf("error writing to tar: %v", err)
 		}
 		n += 1
+		progress.nEvents += 1
 	}
+	close(progressUpdates)
 
 	err = tarWriter.Close()
 	if err != nil {
