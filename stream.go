@@ -8,7 +8,12 @@ import (
 
 	"github.com/ZwickyTransientFacility/ztf-go-archivist/schema"
 	"github.com/segmentio/kafka-go"
+	"github.com/segmentio/kafka-go/lz4"
 )
+
+func init() {
+	kafka.RegisterCompressionCodec(lz4.NewCompressionCodec())
+}
 
 type AlertStream struct {
 	kafkaStream *kafka.Reader

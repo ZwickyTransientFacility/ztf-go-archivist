@@ -2,15 +2,10 @@ package main
 
 import (
 	"archive/tar"
-	"context"
-	"errors"
 	"fmt"
 	"log"
 	"os"
 	"time"
-
-	"github.com/segmentio/kafka-go"
-	"github.com/segmentio/kafka-go/lz4"
 )
 
 const (
@@ -23,15 +18,66 @@ const (
 	updateInterval = 10 * time.Second
 )
 
-func printHelp() {
-	fmt.Println(`usage: ztf-go-archivist TOPIC DESTINATION
+var usage = `usage: ztf-go-archivist TOPIC DESTINATION
 
 This command reads ZTF Alert data from the provided TOPIC, bundles it
 into a TAR file, and writes it to DESTINATION.
-`)
+`
+
+func main() {
+	if shouldPrintUsage() {
+		fmt.Println(usage)
+		os.Exit(1)
+	}
+
+	topic := os.Args[1]
+	tarFilePath := os.Args[2]
+
+	err := run(topic, tarFilePath)
+	if err != nil {
+		log.Fatalf("fatal error: %w", err)
+	}
 }
 
-func shouldPrintHelp() bool {
+func run(topic, tarFilePath string) error {
+	// Connect to Kafka
+	stream, err := NewAlertStream(brokerIP, groupID, topic)
+	if err != nil {
+		return fmt.Errorf("unable to set up alert stream: %w", err)
+	}
+
+	// Prepare a .tar file as the destination for storing the alerts.
+	tarFile, err := os.Create(tarFilePath)
+	if err != nil {
+		return fmt.Errorf("unable to create tar file at %q: %w", tarFilePath, err)
+	}
+	tarWriter := tar.NewWriter(tarFile)
+
+	// Periodically print out our progress
+	progressUpdates := make(chan progressReport, 10)
+	go printProgress(progressUpdates)
+
+	// Read alerts and write them to the .tar file.
+	n, err := tarAlertStream(stream, tarWriter, progressUpdates)
+	if err != nil {
+		return fmt.Errorf("error processing alert stream: %w", err)
+	}
+
+	// Clean up
+	close(progressUpdates)
+
+	if err = tarWriter.Close(); err != nil {
+		log.Fatalf("error closing tar file: %v", err)
+	}
+	if err = stream.Close(); err != nil {
+		log.Fatalf("error closing kafka consumer: %v", err)
+	}
+
+	fmt.Printf("done, wrote %d alerts to disk at %v\n", n, tarFilePath)
+	return nil
+}
+
+func shouldPrintUsage() bool {
 	if len(os.Args) != 3 {
 		return true
 	}
@@ -42,80 +88,4 @@ func shouldPrintHelp() bool {
 		}
 	}
 	return false
-}
-
-func main() {
-	if shouldPrintHelp() {
-		printHelp()
-		os.Exit(1)
-	}
-
-	start := time.Now()
-
-	// Connect to the broker to receive alerts.
-	topic := os.Args[1]
-	kafka.RegisterCompressionCodec(lz4.NewCompressionCodec())
-	stream, err := NewAlertStream(brokerIP, groupID, topic)
-	if err != nil {
-		log.Fatalf("fatal err setting up stream: %v", err)
-	}
-
-	// Prepare a .tar file as the destination for storing the alerts.
-	tarFilePath := os.Args[2]
-	tarFile, err := os.Create(tarFilePath)
-	if err != nil {
-		log.Fatalf("unable to create tar file at %v: %v", tarFilePath, err)
-	}
-	tarWriter := tar.NewWriter(tarFile)
-
-	// Showtime: read alerts and write them to the .tar file.
-	ctx := context.Background()
-	n := 0
-
-	progress := progressReport{}
-	progressUpdates := make(chan progressReport, 10)
-	go printProgress(progressUpdates)
-	progressTicker := time.NewTicker(updateInterval)
-
-	for {
-		if time.Since(start) > maxRuntime {
-			break
-		}
-		select {
-		case <-progressTicker.C:
-			progressUpdates <- progress
-			progress = progressReport{}
-		default:
-		}
-
-		ctx, _ := context.WithTimeout(ctx, messageTimeout)
-		alert, err := stream.NextAlert(ctx)
-		if err != nil {
-			if errors.Is(err, context.DeadlineExceeded) {
-				log.Printf("no message in last %s", messageTimeout)
-				continue
-			}
-			log.Fatalf("error retrieving data: %v", err)
-			return
-		}
-		err = writeAlert(tarWriter, alert)
-		if err != nil {
-			log.Fatalf("error writing to tar: %v", err)
-		}
-		n += 1
-		progress.nEvents += 1
-	}
-	close(progressUpdates)
-
-	err = tarWriter.Close()
-	if err != nil {
-		log.Fatalf("error closing tar file: %v", err)
-	}
-
-	err = stream.Close()
-	if err != nil {
-		log.Fatalf("error closing kafka consumer: %v", err)
-	}
-
-	fmt.Printf("done, wrote %d alerts to disk at %v\n", n, tarFilePath)
 }
