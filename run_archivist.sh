@@ -18,7 +18,7 @@ mkdir -p $(dirname ${TAR_DESTINATION})
 
 log "invoking ztf-go-archivist"
 set -x
-/astro/users/swnelson/ztf-go-archivist "${ZTF_TOPIC}" "${TAR_DESTINATION}"
+/astro/users/swnelson/bin/ztf-go-archivist "${ZTF_TOPIC}" "${TAR_DESTINATION}"
 set +x
 
 log "gzipping result"
