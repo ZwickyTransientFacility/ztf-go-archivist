@@ -38,7 +38,8 @@ func tarAlertStream(stream *AlertStream, tarWriter *tar.Writer, progress chan pr
 		default:
 		}
 
-		ctx, _ := context.WithTimeout(context.Background(), messageTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), messageTimeout)
+		defer cancel()
 		alert, err := stream.NextAlert(ctx)
 		if err != nil {
 			if errors.Is(err, context.DeadlineExceeded) {

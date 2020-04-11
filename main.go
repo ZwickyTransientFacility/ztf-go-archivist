@@ -35,7 +35,7 @@ func main() {
 
 	err := run(topic, tarFilePath)
 	if err != nil {
-		log.Fatalf("fatal error: %w", err)
+		log.Fatalf("fatal error: %v", err)
 	}
 }
 
