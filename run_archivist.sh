@@ -3,7 +3,7 @@
 set -euo pipefail
 
 log() {
-    echo "| run_archivist.sh | $@" | ts
+    echo "$(date) | run_archivist.sh | $@"
 }
 
 log "starting archivist run"
