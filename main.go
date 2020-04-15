@@ -9,18 +9,16 @@ import (
 )
 
 const (
-	broker   = "partnership.alerts.ztf.uw.edu:9092"
-	brokerIP = "138.197.215.247:9092"
-	groupID  = "ztf-go-archivist-dev"
+	groupID = "ztf-go-archivist-dev-swnelson"
 
 	messageTimeout = 5 * time.Second
 	maxRuntime     = 7 * time.Hour
 	updateInterval = 10 * time.Second
 )
 
-var usage = `usage: ztf-go-archivist TOPIC DESTINATION
+var usage = `usage: ztf-go-archivist BROKER TOPIC DESTINATION
 
-This command reads ZTF Alert data from the provided TOPIC, bundles it
+This command reads ZTF Alert data from the provided TOPIC at BROKER, bundles it
 into a TAR file, and writes it to DESTINATION.
 `
 
@@ -30,18 +28,19 @@ func main() {
 		os.Exit(1)
 	}
 
-	topic := os.Args[1]
-	tarFilePath := os.Args[2]
+	broker := os.Args[1]
+	topic := os.Args[2]
+	tarFilePath := os.Args[3]
 
-	err := run(topic, tarFilePath)
+	err := run(broker, topic, tarFilePath)
 	if err != nil {
 		log.Fatalf("fatal error: %v", err)
 	}
 }
 
-func run(topic, tarFilePath string) error {
+func run(broker, topic, tarFilePath string) error {
 	// Connect to Kafka
-	stream, err := NewAlertStream(brokerIP, groupID, topic)
+	stream, err := NewAlertStream(broker, groupID, topic)
 	if err != nil {
 		return fmt.Errorf("unable to set up alert stream: %w", err)
 	}
@@ -78,12 +77,12 @@ func run(topic, tarFilePath string) error {
 }
 
 func shouldPrintUsage() bool {
-	if len(os.Args) != 3 {
+	if len(os.Args) != 4 {
 		return true
 	}
 	helpStatements := []string{"help", "-h", "--help"}
 	for _, h := range helpStatements {
-		if os.Args[1] == h || os.Args[2] == h {
+		if os.Args[1] == h || os.Args[2] == h || os.Args[3] == h {
 			return true
 		}
 	}

@@ -3,11 +3,12 @@
 set -euo pipefail
 
 log() {
-    echo "| run_archivist.sh | $@" | ts
+    echo "$(date) | run_archivist.sh | $@"
 }
 
 log "starting archivist run"
 
+ZTF_BROKER="partnership.alerts.ztf.uw.edu:9092"
 ZTF_TIMESTAMP=$(TZ=UTC printf '%(%Y%m%d)T' -1)
 ZTF_TOPIC="ztf_${ZTF_TIMESTAMP}_programid1"
 TAR_DESTINATION="/astro/users/swnelson/ztf-archive/ztf_public_${ZTF_TIMESTAMP}.tar"
