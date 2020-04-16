@@ -19,7 +19,7 @@ mkdir -p $(dirname ${TAR_DESTINATION})
 
 log "invoking ztf-go-archivist"
 set -x
-/astro/users/swnelson/bin/ztf-go-archivist \
+/epyc/projects/ztf-go-archivist/bin/ztf-go-archivist \
     -broker="${ZTF_BROKER}" \
     -group="ztf-go-archivist" \
     -topic="${ZTF_TOPIC}" \
