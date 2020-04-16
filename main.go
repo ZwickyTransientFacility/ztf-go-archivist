@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/tar"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -16,29 +17,37 @@ const (
 	updateInterval = 10 * time.Second
 )
 
-var usage = `usage: ztf-go-archivist BROKER TOPIC DESTINATION
+var (
+	broker = flag.String("broker", "partnership.alerts.ztf.uw.edu:9092",
+		"hostport of the Kafka broker to connect to")
+	topic = flag.String("topic", "",
+		"topic name to read from the broker, like 'ztf_20200415_programid1'")
+	tarFilePath = flag.String("dest", "",
+		"filepath to write the tar file to")
+	group = flag.String("group", "ztf-go-archivist-dev",
+		"Kafka consumer group to register under for offset tracking")
 
-This command reads ZTF Alert data from the provided TOPIC at BROKER, bundles it
-into a TAR file, and writes it to DESTINATION.
-`
+	usage = func() {
+		fmt.Fprint(os.Stderr, `ztf-go-archivist
+
+This command reads ZTF Alert data from a Kafka broker and writes it to a
+.tar archive file.
+`)
+		flag.PrintDefaults()
+	}
+)
 
 func main() {
-	if shouldPrintUsage() {
-		fmt.Println(usage)
-		os.Exit(1)
-	}
-
-	broker := os.Args[1]
-	topic := os.Args[2]
-	tarFilePath := os.Args[3]
-
-	err := run(broker, topic, tarFilePath)
+	flag.Usage = usage
+	flag.Parse()
+	err := run(*broker, *topic, *tarFilePath, *group)
 	if err != nil {
 		log.Fatalf("fatal error: %v", err)
 	}
 }
 
-func run(broker, topic, tarFilePath string) error {
+func run(broker, topic, tarFilePath, groupID string) error {
+	log.Printf("connecting Kafka, broker=%q topic=%q groupID=%q", broker, topic, groupID)
 	// Connect to Kafka
 	stream, err := NewAlertStream(broker, groupID, topic)
 	if err != nil {
