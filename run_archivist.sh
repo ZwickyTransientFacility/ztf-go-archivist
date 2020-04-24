@@ -1,15 +1,22 @@
 #!/bin/bash
 
-set -euo pipefail
+set -eo pipefail
 
 log() {
-    echo "$(date) | run_archivist.sh | $@"
+    echo "$(date --rfc-3339=ns) | run_archivist.sh | $@"
 }
 
-ZTF_TIMESTAMP=$(TZ=UTC printf '%(%Y%m%d)T' -1)
+log "invoking ztf-go-archivist"
+
 # Usage: run_archivist.sh PROGRAMID
 # PROGRAMID should be 'programid1' for public data, and 'programid3'
 # for partnerships data.
+if [[ -z $1 ]]; then
+    echo "usage: run_archivist.sh PROGRAMID"
+    exit 1
+fi
+set -u
+ZTF_TIMESTAMP=$(TZ=UTC printf '%(%Y%m%d)T' -1)
 PROGRAMID=$1
 if [[ $PROGRAMID = "programid1" ]]; then
     ZTF_TOPIC="ztf_${ZTF_TIMESTAMP}_programid1"
@@ -22,12 +29,11 @@ else
     exit 1
 fi
 
-log "invoking ztf-go-archivist"
 
 # Make a temporary directory where we create the tar file, and then move it into
 # place at the end.
 TMP_DIR=$(mktemp -d)
-TMP_TAR="${TMP_DIR}/ztf-go-archivist_tmp_${PROGAMID}_${ZTF_TIMESTAMP}.tar"
+TMP_TAR="${TMP_DIR}/ztf-go-archivist_tmp_${PROGRAMID}_${ZTF_TIMESTAMP}.tar"
 set -x
 /epyc/projects/ztf-go-archivist/bin/ztf-go-archivist \
     -broker="partnership.alerts.ztf.uw.edu:9092" \
@@ -42,5 +48,8 @@ gzip --best --to-stdout "${TMP_TAR}" > "${TMP_TGZ}"
 
 log "moving file into place"
 mv "${TMP_TGZ}" "${DESTINATION}"
+
+log "adding md5 checksum"
+md5sum "${DESTINATION}" >> $(dirname ${DESTINATION})/MD5SUMS
 
 log "done"
