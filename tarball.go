@@ -19,7 +19,7 @@ func tarAlertStream(stream *AlertStream, tarWriter *tar.Writer, progress chan pr
 		total          = 0
 		batch          = progressReport{}
 		progressTicker = time.NewTicker(updateInterval)
-		overallTimer   = time.NewTimer(maxRuntime)
+		overallTimer   = time.NewTimer(*maxRuntime)
 	)
 	defer progressTicker.Stop()
 	defer overallTimer.Stop()

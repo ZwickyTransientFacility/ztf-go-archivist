@@ -13,7 +13,6 @@ const (
 	groupID = "ztf-go-archivist-dev-swnelson"
 
 	messageTimeout = 5 * time.Second
-	maxRuntime     = 7 * time.Hour
 	updateInterval = 10 * time.Second
 )
 
@@ -26,6 +25,8 @@ var (
 		"filepath to write the tar file to")
 	group = flag.String("group", "ztf-go-archivist-dev",
 		"Kafka consumer group to register under for offset tracking")
+	maxRuntime = flag.Duration("max-runtime", 7*time.Hour,
+		"maximum amount of time to run and process the stream")
 
 	usage = func() {
 		fmt.Fprint(os.Stderr, `ztf-go-archivist
