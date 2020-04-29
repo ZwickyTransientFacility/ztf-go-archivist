@@ -32,7 +32,8 @@ fi
 
 # Make a temporary directory where we create the tar file, and then move it into
 # place at the end.
-TMP_DIR=$(mktemp -d)
+
+TMP_DIR=$(mktemp -d "/epyc/ssd/tmp/ztf-archivist-scratch_${PROGRAMID}_${ZTF_TIMESTAMP}_XXXXXXXXXX")
 TMP_TAR="${TMP_DIR}/ztf-go-archivist_tmp_${PROGRAMID}_${ZTF_TIMESTAMP}.tar"
 set -x
 /epyc/projects/ztf-go-archivist/bin/ztf-go-archivist \
@@ -51,5 +52,8 @@ mv "${TMP_TGZ}" "${DESTINATION}"
 
 log "adding md5 checksum"
 md5sum "${DESTINATION}" >> $(dirname ${DESTINATION})/MD5SUMS
+
+log "cleaning up"
+rm -rf "${TMP_DIR}"
 
 log "done"
