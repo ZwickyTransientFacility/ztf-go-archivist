@@ -9,7 +9,7 @@ log() {
 log "invoking ztf-go-archivist"
 
 # Usage: run_archivist.sh PROGRAMID
-# PROGRAMID should be 'programid1' for public data, and 'programid3'
+# PROGRAMID should be 'programid1' for public data, and 'programid2'
 # for partnerships data.
 if [[ -z $1 ]]; then
     echo "usage: run_archivist.sh PROGRAMID"
@@ -21,11 +21,11 @@ PROGRAMID=$1
 if [[ $PROGRAMID = "programid1" ]]; then
     ZTF_TOPIC="ztf_${ZTF_TIMESTAMP}_programid1"
     DESTINATION="/epyc/data/ztf/alerts/public/ztf_public_${ZTF_TIMESTAMP}.tar.gz"
-elif [[ $PROGRAMID = "programid3" ]]; then
-    ZTF_TOPIC="ztf_${ZTF_TIMESTAMP}_programid3"
+elif [[ $PROGRAMID = "programid2" ]]; then
+    ZTF_TOPIC="ztf_${ZTF_TIMESTAMP}_programid2"
     DESTINATION="/epyc/data/ztf/alerts/partnership/ztf_partnership_${ZTF_TIMESTAMP}.tar.gz"
 else
-    echo "Invalid argument: PROGRAMID should be either 'programid1' or 'programid3' (got '$PROGRAMID')"
+    echo "Invalid argument: PROGRAMID should be either 'programid1' or 'programid2' (got '$PROGRAMID')"
     exit 1
 fi
 
