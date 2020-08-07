@@ -25,6 +25,9 @@ var (
 		"Kafka consumer group to register under for offset tracking")
 	maxRuntime = flag.Duration("max-runtime", 7*time.Hour,
 		"maximum amount of time to run and process the stream")
+	maxQuietPeriod = flag.Duration("max-quiet-period", 7*time.Hour,
+		"stop processing if no data has been received for this long",
+	)
 
 	usage = func() {
 		fmt.Fprint(os.Stderr, `ztf-go-archivist

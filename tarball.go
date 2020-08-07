@@ -20,6 +20,7 @@ func tarAlertStream(stream *AlertStream, tarWriter *tar.Writer, progress chan pr
 		batch          = progressReport{}
 		progressTicker = time.NewTicker(updateInterval)
 		overallTimer   = time.NewTimer(*maxRuntime)
+		lastMessage    = time.Now()
 	)
 	defer progressTicker.Stop()
 	defer overallTimer.Stop()
@@ -44,6 +45,10 @@ func tarAlertStream(stream *AlertStream, tarWriter *tar.Writer, progress chan pr
 		if err != nil {
 			if errors.Is(err, context.DeadlineExceeded) {
 				// Could just be a quiet period.
+				if time.Since(lastMessage) > *maxQuietPeriod {
+					// We've had a long silence. There's probably no more data coming.
+					return total, nil
+				}
 				continue
 			}
 			total += batch.nEvents
@@ -55,6 +60,7 @@ func tarAlertStream(stream *AlertStream, tarWriter *tar.Writer, progress chan pr
 			log.Fatalf("error writing to tar: %v", err)
 		}
 		batch.nEvents += 1
+		lastMessage = time.Now()
 	}
 }
 
