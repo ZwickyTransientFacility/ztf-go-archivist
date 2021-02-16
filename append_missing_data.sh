@@ -3,7 +3,7 @@ set -e -o pipefail
 export TZ=UTC
 
 log() {
-    echo "$(date --rfc-3339=ns) | run_archivist.sh | $@"
+    echo "$(date --rfc-3339=ns) | append_missing_data.sh | $@"
 }
 
 log "invoking ztf-go-archivist"
@@ -49,7 +49,7 @@ fi
 # Make a temporary directory where we copy the existing tar file, and then move
 # it into place at the end.
 
-TMP_DIR=$(mktemp -d "/epyc/ssd/tmp/ztf-archivist-scratch_${PROGRAMID}_${ZTF_TIMESTAMP}_XXXXXXXXXX")
+TMP_DIR=$(mktemp --directory "/epyc/ssd/tmp/ztf-archivist-scratch_${PROGRAMID}_${ZTF_TIMESTAMP}_XXXXXXXXXX")
 TMP_TGZ="${TMP_DIR}/ztf-go-archivist_tmp_${PROGRAMID}_${ZTF_TIMESTAMP}.tar.gz"
 
 cp $DESTINATION $TMP_TGZ
@@ -65,13 +65,13 @@ set -x
 set +x
 
 log "moving file into place"
-mv "${TMP_TGZ}" "${DESTINATION}"
+mv --force "${TMP_TGZ}" "${DESTINATION}"
 
 log "updating md5 checksum"
 NEW_SUM=$(md5sum "${DESTINATION}")
-sed -i "/$(basename $DESTINATION)/c\\$NEW_SUM" $(dirname ${DESTINATION})/MD5SUMS
+sed --in-place "/$(basename $DESTINATION)/c\\$NEW_SUM" $(dirname ${DESTINATION})/MD5SUMS
 
 log "cleaning up"
-rm -rf "${TMP_DIR}"
+rm --recursive --force "${TMP_DIR}"
 
 log "done"
