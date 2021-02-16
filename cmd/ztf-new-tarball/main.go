@@ -2,7 +2,6 @@ package main
 
 import (
 	"archive/tar"
-	"compress/gzip"
 	"flag"
 	"fmt"
 	"log"
@@ -77,17 +76,32 @@ func run(broker, topic, destFilePath, groupID string) error {
 	go ui.PrintProgress(config.Progress)
 
 	// Prepare a .tar.gz file as the destination for storing the alerts.
-	destFile, err := os.Create(destFilePath)
+	//
+	// Try to open the -dest argument as an existing file. If it doesn't exist,
+	// this will error, and we'll create a fresh new file.
+	destFile, err := os.OpenFile(destFilePath, os.O_RDWR, 0644)
 	if err != nil {
-		return fmt.Errorf("unable to create destination file at %q: %w", destFilePath, err)
+		if os.IsNotExist(err) {
+			// Create the file if it doesn't exist.
+			destFile, err = os.Create(destFilePath)
+			if err != nil {
+				return fmt.Errorf("unable to create destination file at %q: %w", destFilePath, err)
+			}
+		} else {
+			return fmt.Errorf("unable to open destination file at %q: %w", destFilePath, err)
+		}
+	} else {
+		// The file already existed; seek to the end. Gzipped write calls will
+		// append to the file; gzip calls can be naively concatenated so this is
+		// fine.
+		_, err = destFile.Seek(0, os.SEEK_END)
+		if err != nil {
+			return fmt.Errorf("unable to seek to end of destination file: %w", err)
+		}
 	}
 
-	gzWriter, err := gzip.NewWriterLevel(destFile, gzip.BestCompression)
-	if err != nil {
-		panic(err) // This can only happen if we provide an invalid compression level
-	}
-
-	tarWriter := tar.NewWriter(gzWriter)
+	// Write data in tar format:
+	tarWriter := tar.NewWriter(destFile)
 
 	// Read alerts and write them to the destination file.
 	n, err := tarball.TarAlertStream(stream, tarWriter, config)
@@ -100,9 +114,6 @@ func run(broker, topic, destFilePath, groupID string) error {
 
 	if err = tarWriter.Close(); err != nil {
 		log.Fatalf("error closing tar writer: %v", err)
-	}
-	if err = gzWriter.Close(); err != nil {
-		log.Fatalf("error closing gzip writer: %v", err)
 	}
 	if err = destFile.Close(); err != nil {
 		log.Fatalf("error closing file: %v", err)
