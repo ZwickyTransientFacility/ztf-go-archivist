@@ -10,8 +10,6 @@ import (
 )
 
 const (
-	groupID = "ztf-go-archivist-dev-swnelson"
-
 	messageTimeout = 5 * time.Second
 	updateInterval = 10 * time.Second
 )
