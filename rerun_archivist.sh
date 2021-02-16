@@ -28,19 +28,22 @@ ztf_program_class_to_id() {
     fi
 }
 
-# When running the archivist, override the default group ID so that we start
-# from the oldest offset, regardless of any progress made.
-ZTF_ARCHIVIST_GROUP="ztf-go-archivist-rerun-$(date '+%Y%m%d')"
-export ZTF_ARCHIVIST_GROUP
+# When running the archivist, override the default group ID for any
+# entirely-missing tarballs so that we start from the oldest offset, regardless
+# of any progress made.
+ZTF_ARCHIVIST_RERUN_GROUP="ztf-go-archivist-rerun-$(date '+%Y%m%d')"
 
 for DAYS_AGO in 1 2 3 4 5 6 7; do
     TIMESTAMP=$(ztf_timestamp $DAYS_AGO)
     for PROGRAM in public partnership; do
+        PROGRAM_ID=$(ztf_program_class_to_id $PROGRAM)
         TARBALL_PATH=$(ztf_tarball_path $TIMESTAMP $PROGRAM)
         if [ ! -f $TARBALL_PATH ]; then
             echo "$TARBALL_PATH is missing, rerunning"
-            PROGRAM_ID=$(ztf_program_class_to_id $PROGRAM)
-            /epyc/projects/ztf-go-archivist/bin/run_archivist.sh $PROGRAM_ID $TIMESTAMP
+            ZTF_ARCHIVIST_GROUP="${ZTF_ARCHIVIST_RERUN_GROUP}" /epyc/projects/ztf-go-archivist/bin/run_archivist.sh $PROGRAM_ID $TIMESTAMP
+        else
+            echo "$TARBALL_PATH exists, checking for any missing data and appending"
+            /epyc/projects/ztf-go-archivist/bin/append_missing_data.sh $PROGRAM_ID $TIMESTAMP
         fi
     done
 done

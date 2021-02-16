@@ -1,6 +1,6 @@
 #!/bin/bash
-
-set -eo pipefail
+set -e -o pipefail
+export TZ=UTC
 
 log() {
     echo "$(date --rfc-3339=ns) | run_archivist.sh | $@"
@@ -8,27 +8,32 @@ log() {
 
 log "invoking ztf-go-archivist"
 
-# Usage: run_archivist.sh PROGRAMID [DATE]
+
+# Usage: append_missing_data.sh PROGRAMID DATE
+#
+# Appends any unwritten data to an existing ZTF tarball.
 #
 # PROGRAMID should be 'programid1' for public data, and 'programid2'
 # for partnerships data.
 #
-# DATE is optional. If unset, today is used. If set, it should be a ZTF-style
-# timestamp for the day to rerun data.
+# DATE should be a ZTF-style timestamp for the day to check for unwritten data.
+
+# Parse input arguments to the script:
 if [[ -z $1 ]]; then
-    echo "usage: run_archivist.sh PROGRAMID [DATE]"
+    echo "usage: append_missing_data.sh PROGRAMID DATE"
     exit 1
 fi
 
 if [[ -z $2 ]]; then
-    ZTF_TIMESTAMP=$(TZ=UTC printf '%(%Y%m%d)T' -1)
-else
-    ZTF_TIMESTAMP=$2
+    echo "usage: append_missing_data.sh PROGRAMID DATE"
+    exit 1
 fi
 
 set -u
 
 PROGRAMID=$1
+ZTF_TIMESTAMP=$2
+
 if [[ $PROGRAMID = "programid1" ]]; then
     ZTF_TOPIC="ztf_${ZTF_TIMESTAMP}_programid1"
     DESTINATION="/epyc/data/ztf/alerts/public/ztf_public_${ZTF_TIMESTAMP}.tar.gz"
@@ -41,25 +46,30 @@ else
 fi
 
 
-# Make a temporary directory where we create the tar file, and then move it into
-# place at the end.
+# Make a temporary directory where we copy the existing tar file, and then move
+# it into place at the end.
 
 TMP_DIR=$(mktemp -d "/epyc/ssd/tmp/ztf-archivist-scratch_${PROGRAMID}_${ZTF_TIMESTAMP}_XXXXXXXXXX")
 TMP_TGZ="${TMP_DIR}/ztf-go-archivist_tmp_${PROGRAMID}_${ZTF_TIMESTAMP}.tar.gz"
+
+cp $DESTINATION $TMP_TGZ
+
 set -x
 /epyc/projects/ztf-go-archivist/bin/ztf-go-archivist \
     -broker="partnership.alerts.ztf.uw.edu:9092" \
     -group="${ZTF_ARCHIVIST_GROUP:-ztf-go-archivist}" \
     -topic="${ZTF_TOPIC}" \
     -dest="${TMP_TGZ}" \
-    -max-runtime=12h
+    -max-quiet-period=10m \
+    -max-runtime=2h
 set +x
 
 log "moving file into place"
 mv "${TMP_TGZ}" "${DESTINATION}"
 
-log "adding md5 checksum"
-md5sum "${DESTINATION}" >> $(dirname ${DESTINATION})/MD5SUMS
+log "updating md5 checksum"
+NEW_SUM=$(md5sum "${DESTINATION}")
+sed -i "/$(basename $DESTINATION)/c\\$NEW_SUM" $(dirname ${DESTINATION})/MD5SUMS
 
 log "cleaning up"
 rm -rf "${TMP_DIR}"
