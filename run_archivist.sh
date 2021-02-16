@@ -45,19 +45,14 @@ fi
 # place at the end.
 
 TMP_DIR=$(mktemp -d "/epyc/ssd/tmp/ztf-archivist-scratch_${PROGRAMID}_${ZTF_TIMESTAMP}_XXXXXXXXXX")
-TMP_TAR="${TMP_DIR}/ztf-go-archivist_tmp_${PROGRAMID}_${ZTF_TIMESTAMP}.tar"
-
+TMP_TGZ="${TMP_DIR}/ztf-go-archivist_tmp_${PROGRAMID}_${ZTF_TIMESTAMP}.tar.gz"
 set -x
 /epyc/projects/ztf-go-archivist/bin/ztf-go-archivist \
     -broker="partnership.alerts.ztf.uw.edu:9092" \
     -group="${ZTF_ARCHIVIST_GROUP:-ztf-go-archivist}" \
     -topic="${ZTF_TOPIC}" \
-    -dest="${TMP_TAR}"
+    -dest="${TMP_TGZ}"
 set +x
-
-log "gzipping result"
-TMP_TGZ="${TMP_TAR}.gz"
-gzip --best --to-stdout "${TMP_TAR}" > "${TMP_TGZ}"
 
 log "moving file into place"
 mv "${TMP_TGZ}" "${DESTINATION}"
