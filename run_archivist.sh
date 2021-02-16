@@ -8,15 +8,26 @@ log() {
 
 log "invoking ztf-go-archivist"
 
-# Usage: run_archivist.sh PROGRAMID
+# Usage: run_archivist.sh PROGRAMID [DATE]
+#
 # PROGRAMID should be 'programid1' for public data, and 'programid2'
 # for partnerships data.
+#
+# DATE is optional. If unset, today is used. If set, it should be a ZTF-style
+# timestamp for the day to rerun data.
 if [[ -z $1 ]]; then
-    echo "usage: run_archivist.sh PROGRAMID"
+    echo "usage: run_archivist.sh PROGRAMID [DATE]"
     exit 1
 fi
+
+if [[ -z $2 ]]; then
+    ZTF_TIMESTAMP=$(TZ=UTC printf '%(%Y%m%d)T' -1)
+else
+    ZTF_TIMESTAMP=$2
+fi
+
 set -u
-ZTF_TIMESTAMP=$(TZ=UTC printf '%(%Y%m%d)T' -1)
+
 PROGRAMID=$1
 if [[ $PROGRAMID = "programid1" ]]; then
     ZTF_TOPIC="ztf_${ZTF_TIMESTAMP}_programid1"
@@ -35,10 +46,11 @@ fi
 
 TMP_DIR=$(mktemp -d "/epyc/ssd/tmp/ztf-archivist-scratch_${PROGRAMID}_${ZTF_TIMESTAMP}_XXXXXXXXXX")
 TMP_TAR="${TMP_DIR}/ztf-go-archivist_tmp_${PROGRAMID}_${ZTF_TIMESTAMP}.tar"
+
 set -x
 /epyc/projects/ztf-go-archivist/bin/ztf-go-archivist \
     -broker="partnership.alerts.ztf.uw.edu:9092" \
-    -group="ztf-go-archivist" \
+    -group="${ZTF_ARCHIVIST_GROUP:-ztf-go-archivist}" \
     -topic="${ZTF_TOPIC}" \
     -dest="${TMP_TAR}"
 set +x
