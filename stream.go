@@ -48,6 +48,7 @@ func NewAlertStream(brokerAddr, groupID, topic string) (*AlertStream, error) {
 		MinBytes:    10e3, // 10KB
 		MaxBytes:    10e6, // 10MB
 		StartOffset: kafka.FirstOffset,
+		RetentionTime: 24 * 14 * time.Hour,
 	}
 	if err = conf.Validate(); err != nil {
 		return nil, err
