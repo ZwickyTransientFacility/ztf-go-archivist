@@ -1,4 +1,4 @@
-package main
+package tarball
 
 import (
 	"archive/tar"
@@ -10,16 +10,27 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ZwickyTransientFacility/ztf-go-archivist/schema"
+	"github.com/ZwickyTransientFacility/ztf-go-archivist/internal/schema"
+	"github.com/ZwickyTransientFacility/ztf-go-archivist/internal/stream"
+	"github.com/ZwickyTransientFacility/ztf-go-archivist/internal/ui"
 	"github.com/actgardner/gogen-avro/container"
 )
 
-func tarAlertStream(stream *AlertStream, tarWriter *tar.Writer, progress chan progressReport) (int, error) {
+type TarStreamConfig struct {
+	UpdateInterval time.Duration
+	MaxRuntime     time.Duration
+	MessageTimeout time.Duration
+	MaxQuietPeriod time.Duration
+
+	Progress chan ui.ProgressReport
+}
+
+func TarAlertStream(stream *stream.AlertStream, tarWriter *tar.Writer, conf TarStreamConfig) (int, error) {
 	var (
 		total          = 0
-		batch          = progressReport{}
-		progressTicker = time.NewTicker(updateInterval)
-		overallTimer   = time.NewTimer(*maxRuntime)
+		batch          = ui.ProgressReport{}
+		progressTicker = time.NewTicker(conf.UpdateInterval)
+		overallTimer   = time.NewTimer(conf.MaxRuntime)
 		lastMessage    = time.Now()
 	)
 	defer progressTicker.Stop()
@@ -30,28 +41,28 @@ func tarAlertStream(stream *AlertStream, tarWriter *tar.Writer, progress chan pr
 		select {
 		case <-overallTimer.C:
 			// Time's up!
-			total += batch.nEvents
+			total += batch.NEvents
 			return total, nil
 		case <-progressTicker.C:
-			progress <- batch
-			total += batch.nEvents
-			batch = progressReport{}
+			conf.Progress <- batch
+			total += batch.NEvents
+			batch = ui.ProgressReport{}
 		default:
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), messageTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), conf.MessageTimeout)
 		defer cancel()
 		alert, err := stream.NextAlert(ctx)
 		if err != nil {
 			if errors.Is(err, context.DeadlineExceeded) {
 				// Could just be a quiet period.
-				if time.Since(lastMessage) > *maxQuietPeriod {
+				if time.Since(lastMessage) > conf.MaxQuietPeriod {
 					// We've had a long silence. There's probably no more data coming.
 					return total, nil
 				}
 				continue
 			}
-			total += batch.nEvents
+			total += batch.NEvents
 			return total, fmt.Errorf("error retrieving data: %v", err)
 		}
 
@@ -59,7 +70,7 @@ func tarAlertStream(stream *AlertStream, tarWriter *tar.Writer, progress chan pr
 		if err != nil {
 			log.Fatalf("error writing to tar: %v", err)
 		}
-		batch.nEvents += 1
+		batch.NEvents += 1
 		lastMessage = time.Now()
 	}
 }

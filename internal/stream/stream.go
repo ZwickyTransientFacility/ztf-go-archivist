@@ -1,4 +1,4 @@
-package main
+package stream
 
 import (
 	"bytes"
@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ZwickyTransientFacility/ztf-go-archivist/schema"
+	"github.com/ZwickyTransientFacility/ztf-go-archivist/internal/schema"
 	"github.com/segmentio/kafka-go"
 	"github.com/segmentio/kafka-go/lz4"
 )
@@ -42,12 +42,12 @@ func NewAlertStream(brokerAddr, groupID, topic string) (*AlertStream, error) {
 	log.Printf("resolved broker address %q to %q", brokerAddr, brokerIPPort)
 
 	conf := kafka.ReaderConfig{
-		Brokers:     []string{brokerIPPort},
-		GroupID:     groupID,
-		Topic:       topic,
-		MinBytes:    10e3, // 10KB
-		MaxBytes:    10e6, // 10MB
-		StartOffset: kafka.FirstOffset,
+		Brokers:       []string{brokerIPPort},
+		GroupID:       groupID,
+		Topic:         topic,
+		MinBytes:      10e3, // 10KB
+		MaxBytes:      10e6, // 10MB
+		StartOffset:   kafka.FirstOffset,
 		RetentionTime: 24 * 14 * time.Hour,
 	}
 	if err = conf.Validate(); err != nil {
