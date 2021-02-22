@@ -44,7 +44,9 @@ func TarAlertStream(stream *stream.AlertStream, tarWriter *tar.Writer, conf TarS
 			total += batch.NEvents
 			return total, nil
 		case <-progressTicker.C:
-			conf.Progress <- batch
+			if conf.Progress != nil {
+				conf.Progress <- batch
+			}
 			total += batch.NEvents
 			batch = ui.ProgressReport{}
 		default:
@@ -58,7 +60,7 @@ func TarAlertStream(stream *stream.AlertStream, tarWriter *tar.Writer, conf TarS
 				// Could just be a quiet period.
 				if time.Since(lastMessage) > conf.MaxQuietPeriod {
 					// We've had a long silence. There's probably no more data coming.
-					return total, nil
+					return total + batch.NEvents, nil
 				}
 				continue
 			}

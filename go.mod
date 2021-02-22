@@ -9,8 +9,7 @@ require (
 	github.com/google/go-cmp v0.4.0 // indirect
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/pierrec/lz4 v2.4.1+incompatible // indirect
-	github.com/segmentio/kafka-go v0.3.5
-	github.com/stretchr/testify v1.4.0 // indirect
+	github.com/segmentio/kafka-go v0.4.10
 	golang.org/x/crypto v0.0.0-20200406173513-056763e48d71 // indirect
 	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b // indirect
 	golang.org/x/text v0.3.2 // indirect

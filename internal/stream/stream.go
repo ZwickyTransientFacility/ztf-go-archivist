@@ -6,18 +6,11 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net"
-	"strings"
 	"time"
 
 	"github.com/ZwickyTransientFacility/ztf-go-archivist/internal/schema"
 	"github.com/segmentio/kafka-go"
-	"github.com/segmentio/kafka-go/lz4"
 )
-
-func init() {
-	kafka.RegisterCompressionCodec(lz4.NewCompressionCodec())
-}
 
 type AlertStream struct {
 	kafkaStream *kafka.Reader
@@ -26,19 +19,11 @@ type AlertStream struct {
 }
 
 func NewAlertStream(brokerAddr, groupID, topic string) (*AlertStream, error) {
-	// Resolve the IP manually so we don't use an IPv6 address. Kafka's listener
-	// doesn't seem to like IPv6.
-	host, port, err := splitHostPort(brokerAddr)
+	addr, err := resolveBrokerAddr(brokerAddr)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to resolve broker: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	addr, err := lookupIPv4(ctx, host)
-	if err != nil {
-		log.Fatalf("unable to resolve broker: %v", err)
-	}
-	brokerIPPort := addr.String() + ":" + port
+	brokerIPPort := addr.String()
 	log.Printf("resolved broker address %q to %q", brokerAddr, brokerIPPort)
 
 	conf := kafka.ReaderConfig{
@@ -93,32 +78,4 @@ func (as *AlertStream) NextAlertReader(ctx context.Context) (*schema.AlertReader
 
 func (as *AlertStream) Close() error {
 	return as.kafkaStream.Close()
-}
-
-// splitHostPort splits a string on the first colon to pull a hostname and a
-// port out separately from an address.
-func splitHostPort(hostport string) (host, port string, err error) {
-	parts := strings.SplitN(hostport, ":", 2)
-	if len(parts) != 2 {
-		return "", "", fmt.Errorf("invalid hostport: %v", hostport)
-	}
-	return parts[0], parts[1], nil
-}
-
-// lookupIPv4 returns the first IPv4 address returned by the system resolver for
-// the given hostname. If the hostname does not resolve to any IPv4 addresses,
-// an error is returned.
-func lookupIPv4(ctx context.Context, hostname string) (addr net.IP, err error) {
-	res := new(net.Resolver)
-	addrs, err := res.LookupIPAddr(ctx, hostname)
-	if err != nil {
-		return nil, err
-	}
-	for _, a := range addrs {
-		ipv4 := a.IP.To4()
-		if ipv4 != nil {
-			return ipv4, nil
-		}
-	}
-	return nil, fmt.Errorf("no ipv4 addresses found for %s", hostname)
 }

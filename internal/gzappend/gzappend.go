@@ -26,7 +26,7 @@ type GzipAppender struct {
 	gzw       *gzip.Writer
 }
 
-func newGzipAppender(f *os.File) *GzipAppender {
+func NewGzipAppender(f *os.File) *GzipAppender {
 	gzWriter, err := gzip.NewWriterLevel(f, gzip.BestCompression)
 	if err != nil {
 		panic(err) // This can only happen if we provide an invalid compression level
