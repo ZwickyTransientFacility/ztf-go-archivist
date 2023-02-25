@@ -11,9 +11,7 @@ require (
 	github.com/pierrec/lz4 v2.4.1+incompatible // indirect
 	github.com/segmentio/kafka-go v0.3.5
 	github.com/stretchr/testify v1.4.0 // indirect
-	golang.org/x/crypto v0.0.0-20200406173513-056763e48d71 // indirect
-	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b // indirect
-	golang.org/x/text v0.3.2 // indirect
+	golang.org/x/crypto v0.1.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
 )
