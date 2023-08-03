@@ -15,9 +15,12 @@ ztf_tarball_path() {
     # program class should be 'public' or 'partnership'.
     #
     # Example: ztf_tarball_exists 20200526 public
+    BASE_DIR="/astro/users/ecbellm/tmp_ztf_alert_archive/"
+    #BASE_DIR="/epyc/data/ztf/alerts/"
+
     TIMESTAMP=$1
     PROGRAM_CLASS=$2
-    echo "/epyc/data/ztf/alerts/${PROGRAM_CLASS}/ztf_${PROGRAM_CLASS}_${TIMESTAMP}.tar.gz"
+    echo "${BASE_DIR}/${PROGRAM_CLASS}/ztf_${PROGRAM_CLASS}_${TIMESTAMP}.tar.gz"
 }
 
 ztf_program_class_to_id() {
@@ -40,7 +43,8 @@ for DAYS_AGO in 1 2 3 4 5 6 7; do
         if [ ! -f $TARBALL_PATH ]; then
             echo "$TARBALL_PATH is missing, rerunning"
             PROGRAM_ID=$(ztf_program_class_to_id $PROGRAM)
-            /epyc/projects/ztf-go-archivist/bin/run_archivist.sh $PROGRAM_ID $TIMESTAMP
+            /astro/users/ecbellm/ztf-go-archivist/run_archivist.sh $PROGRAM_ID $TIMESTAMP
+            #/epyc/projects/ztf-go-archivist/bin/run_archivist.sh $PROGRAM_ID $TIMESTAMP
         fi
     done
 done
