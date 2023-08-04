@@ -57,6 +57,7 @@ set -x
     -broker="partnership.alerts.ztf.uw.edu:9092" \
     -group="${ZTF_ARCHIVIST_GROUP:-ztf-go-archivist}" \
     -topic="${ZTF_TOPIC}" \
+    -max-quiet-period="1m0s" \
     -dest="${TMP_TAR}"
 set +x
 
