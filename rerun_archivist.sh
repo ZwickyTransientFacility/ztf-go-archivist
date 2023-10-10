@@ -36,7 +36,7 @@ ztf_program_class_to_id() {
 ZTF_ARCHIVIST_GROUP="ztf-go-archivist-rerun-$(date '+%Y%m%d')"
 export ZTF_ARCHIVIST_GROUP
 
-for DAYS_AGO in 1 2 3 4 5 6 7; do
+for DAYS_AGO in 0 1 2 3 4 5 6 7; do
     TIMESTAMP=$(ztf_timestamp $DAYS_AGO)
     for PROGRAM in public partnership; do
         TARBALL_PATH=$(ztf_tarball_path $TIMESTAMP $PROGRAM)
