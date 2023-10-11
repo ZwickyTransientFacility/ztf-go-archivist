@@ -17,37 +17,37 @@ import (
 	"github.com/actgardner/gogen-avro/compiler"
 )
 
-func NewAlertWriter(writer io.Writer, codec container.Codec, recordsPerBlock int64) (*container.Writer, error) {
-	str := NewAlert()
+func NewFp_histWriter(writer io.Writer, codec container.Codec, recordsPerBlock int64) (*container.Writer, error) {
+	str := NewFp_hist()
 	return container.NewWriter(writer, codec, recordsPerBlock, str.Schema())
 }
 
 // container reader
-type AlertReader struct {
+type Fp_histReader struct {
 	r io.Reader
 	p *vm.Program
 }
 
-func NewAlertReader(r io.Reader) (*AlertReader, error){
+func NewFp_histReader(r io.Reader) (*Fp_histReader, error){
 	containerReader, err := container.NewReader(r)
 	if err != nil {
 		return nil, err
 	}
 
-	t := NewAlert()
+	t := NewFp_hist()
 	deser, err := compiler.CompileSchemaBytes([]byte(containerReader.AvroContainerSchema()), []byte(t.Schema()))
 	if err != nil {
 		return nil, err
 	}
 
-	return &AlertReader {
+	return &Fp_histReader {
 		r: containerReader,
 		p: deser,
 	}, nil
 }
 
-func (r AlertReader) Read() (*Alert, error) {
-	t := NewAlert()
+func (r Fp_histReader) Read() (*Fp_hist, error) {
+	t := NewFp_hist()
         err := vm.Eval(r.r, r.p, t)
 	return t, err
 }
