@@ -4,6 +4,7 @@
  *     alert.avsc
  *     candidate.avsc
  *     cutout.avsc
+ *     fp_hist.avsc
  *     prv_candidate.avsc
  */
 package schema
@@ -88,7 +89,7 @@ func (r *Cutout) Serialize(w io.Writer) error {
 }
 
 func (r *Cutout) Schema() string {
-	return "{\"doc\":\"avro alert schema\",\"fields\":[{\"name\":\"fileName\",\"type\":\"string\"},{\"doc\":\"fits.gz\",\"name\":\"stampData\",\"type\":\"bytes\"}],\"name\":\"ztf.alert.cutout\",\"type\":\"record\",\"version\":\"3.3\"}"
+	return "{\"doc\":\"avro alert schema\",\"fields\":[{\"name\":\"fileName\",\"type\":\"string\"},{\"doc\":\"fits.gz\",\"name\":\"stampData\",\"type\":\"bytes\"}],\"name\":\"ztf.alert.cutout\",\"type\":\"record\",\"version\":\"4.02\"}"
 }
 
 func (r *Cutout) SchemaName() string {

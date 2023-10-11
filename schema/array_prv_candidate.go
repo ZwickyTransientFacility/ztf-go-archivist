@@ -4,6 +4,7 @@
  *     alert.avsc
  *     candidate.avsc
  *     cutout.avsc
+ *     fp_hist.avsc
  *     prv_candidate.avsc
  */
 package schema
