@@ -1,4 +1,4 @@
-.PHONY: build generate lint
+.PHONY: build generate lint test
 
 build:
 	go build -o ./bin/ztf-go-archivist .
@@ -8,3 +8,6 @@ generate:
 
 lint:
 	go vet ./...
+
+test:
+	./tests/test_scripts.sh
